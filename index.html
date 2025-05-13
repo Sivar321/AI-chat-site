@@ -1,12 +1,14 @@
-<title>Chat with Gemini AI</title>
+<title>Enhanced Gemini Chat</title>
 <style>
 :root {
     --primary: #2a9d8f;
     --secondary: #264653;
     --accent: #e9c46a;
+    --danger: #e63946;
     --bg: #1a1a1a;
     --container-bg: #2d2d2d;
     --text: #ffffff;
+    --text-muted: #cccccc;
     --border: #404040;
 }
 
@@ -16,25 +18,59 @@ body {
     padding: 20px;
     background: var(--bg);
     color: var(--text);
+    position: relative; /* For positioning the learning indicator */
 }
 
-.container {
+.learning-progress-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: var(--accent);
+    color: var(--bg);
+    padding: 8px 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    z-index: 1000;
+    font-size: 0.9em;
+    display: none; /* Hidden by default */
+}
+
+.main-layout {
+    display: flex;
+    gap: 20px;
+    height: calc(100vh - 40px); /* Full height minus padding */
+}
+
+.sidebar {
+    width: 250px;
+    background: var(--container-bg);
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-area {
     max-width: 800px;
     margin: 0 auto;
     background: var(--container-bg);
     padding: 20px;
     border-radius: 20px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
 }
 
 .chat-container {
-    height: 60vh;
+    flex-grow: 1; /* Take available space */
     overflow-y: auto;
     padding: 20px;
     border: 1px solid var(--border);
     border-radius: 15px;
     margin-bottom: 20px;
-    background: var(--container-bg);
+    background: var(--bg); /* Slightly different background for chat */
 }
 
 .message {
@@ -48,13 +84,13 @@ body {
 .user-message {
     background: var(--primary);
     color: white;
-    margin-left: 20%;
+    margin-left: 15%;
 }
 
 .ai-message {
     background: var(--secondary);
     color: white;
-    margin-right: 20%;
+    margin-right: 15%;
 }
 
 .input-container {
@@ -96,6 +132,7 @@ button:hover {
     padding: 10px;
     border: 1px solid var(--border);
     border-radius: 10px;
+    background-color: var(--bg);
 }
 
 .attachments {
@@ -134,6 +171,7 @@ button:hover {
 }
 
 .prompt-slot {
+    color: var(--text);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -147,7 +185,7 @@ button:hover {
     border-color: white;
 }
 
-.prompt-slot .prompt-name {
+.prompt-slot .prompt-name, .conversation-item .conversation-name {
     flex: 1;
     min-width: 0;
     padding: 5px;
@@ -225,98 +263,82 @@ button:hover {
     border: 1px solid var(--border);
 }
 
-.prompt-actions {
+.prompt-actions, .conversation-actions {
     display: flex;
     gap: 5px;
+}
+
+.prompt-actions button, .conversation-actions button {
+    padding: 3px 8px;
+    font-size: 0.8em;
 }
 
 #toggleSystemPrompt {
     margin-bottom: 10px;
 }
 
-.export-import {
+.export-import, .conversation-management {
     margin-top: 10px;
     display: flex;
     gap: 10px;
 }
 
-.message p {
-    margin: 0.5em 0;
-}
-
-.message h1, .message h2, .message h3, .message h4, .message h5, .message h6 {
-    margin: 0.5em 0;
-    color: var(--accent);
-}
-
-.message ul, .message ol {
-    margin: 0.5em 0;
-    padding-left: 1.5em;
-}
-
-.message blockquote {
-    border-left: 3px solid var(--accent);
-    margin: 0.5em 0;
-    padding-left: 1em;
-    color: #cccccc;
-}
-
-.message hr {
-    border: none;
-    border-top: 1px solid var(--border);
-    margin: 1em 0;
-}
-
-.message code:not(.code-block code) {
-    background: #000000;
-    padding: 0.2em 0.4em;
-    border-radius: 3px;
-    font-family: monospace;
-}
-
-.message a {
-    color: var(--accent);
-    text-decoration: none;
-}
-
-.message a:hover {
-    text-decoration: underline;
-}
-
-.safety-settings {
+.advanced-options {
+    display: none; /* Hidden by default */
     margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border);
+    padding: 20px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
 }
 
-.safety-settings h3 {
-    margin: 0 0 15px 0;
-    color: var(--accent);
+.advanced-options.visible {
+    display: block;
 }
 
-.safety-category {
+.option-group {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin: 10px 0;
+    margin-bottom: 15px;
 }
 
-.safety-category label {
-    min-width: 180px;
+.option-group label {
+    min-width: 100px;
 }
 
-.safety-category select {
-    flex: 1;
+.option-group input[type="number"] {
+    width: 80px;
     padding: 8px;
-    border-radius: 8px;
-    background: var(--bg);
-    color: var(--text);
-    border: 1px solid var(--border);
 }
 
-.safety-category select:focus {
-    outline: none;
-    border-color: var(--accent);
+.sidebar h2 {
+    margin-top: 0;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    font-size: 1.2em;
+}
+
+.conversation-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 15px;
+}
+
+.conversation-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 5px;
+    transition: background-color 0.2s;
+}
+
+.conversation-item.active, .conversation-item:hover {
+    background-color: var(--secondary);
 }
 
 .message pre {
@@ -333,53 +355,77 @@ button:hover {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-java.min.js"></script>
 </head>
 <body>
-<div class="container">
-    <h1>Chat with Gemini AI</h1>
-    
-    <div class="api-key-container">
-        <!-- This section will be hidden by CSS -->
-        <input type="password" id="apiKeyInput" placeholder="Enter your Google API Key">
-    </div>
-    <select id="modelInput">
-        <option value="">Loading models...</option>
-    </select>
+<div class="learning-progress-indicator" id="learningProgressIndicator">Learning... 0%</div>
 
-    <div class="chat-container" id="chatContainer">
-        <!-- Messages will appear here -->
-    </div>
+<div class="main-layout">
+    <div class="sidebar">
+        <h2>Conversations</h2>
+        <div class="conversation-management">
+            <input type="text" id="conversationSearch" placeholder="Search conversations..." style="flex-grow: 1;">
+            <button onclick="createNewConversation()" title="New Conversation">+</button>
+        </div>
+        <div class="conversation-list" id="conversationList">
+            <!-- Conversation items will be added here -->
+        </div>
 
-    <div class="loading" id="loadingIndicator">
-        AI is thinking...
-    </div>
+        <h2>Options</h2>
+         <select id="modelInput">
+            <option value="">Loading models...</option>
+        </select>
+        <button id="toggleSystemPrompt">System Prompts</button>
+        <button id="toggleAdvanced">Advanced Settings</button>
+        <button onclick="exportCurrentConversation()">Export Current Chat</button>
+        <input type="file" id="importConversationFile" accept=".json,.txt" style="display: none;">
+        <button onclick="document.getElementById('importConversationFile').click()">Import Chat</button>
 
-    <div class="input-container">
-        <input type="text" id="userInput" placeholder="Type your message...">
-        <button onclick="sendMessage()">Send</button>
-        <button onclick="clearChat()" style="background: #e63946;">Clear</button>
-    </div>
-
-    <div class="file-attachment-container">
-        <div class="attachments" id="attachmentList"></div>
-        <label class="file-upload-btn">
-            <input type="file" id="fileInput" multiple>
-            Add Files
-        </label>
+         <div class="api-info">
+            Using hardcoded API key.
+        </div>
     </div>
 
-    <button id="toggleSystemPrompt">Toggle System Prompt Manager</button>
+    <div class="chat-area">
+        <h1 id="chatTitle">Chat with Gemini AI</h1>
+        <div class="api-key-container">
+            <!-- API key input is hidden -->
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <!-- Messages will appear here -->
+        </div>
+
+        <div class="loading" id="loadingIndicator">
+            AI is thinking...
+        </div>
+
+        <div class="input-container">
+            <input type="text" id="userInput" placeholder="Type your message...">
+            <button onclick="sendMessage()">Send</button>
+            <button onclick="clearChat()" style="background: var(--danger);">Clear</button>
+        </div>
+
+        <div class="file-attachment-container">
+            <div class="attachments" id="attachmentList"></div>
+            <label class="file-upload-btn">
+                <input type="file" id="fileInput" multiple>
+                Add Files
+            </label>
+        </div>
+    </div>
+
+    <!-- Modals/Popups for settings -->
     <div class="system-prompt-container" id="systemPromptContainer">
+        <h2>System Prompt Manager</h2>
         <div class="prompt-slots" id="promptSlots">
             <!-- Prompt slots will be added here -->
         </div>
+        <button onclick="createNewPrompt()">Create New Prompt</button>
         <div class="export-import">
             <button onclick="exportPrompts()">Export Prompts</button>
             <input type="file" id="importFile" accept=".zip" style="display: none;">
             <button onclick="document.getElementById('importFile').click()">Import Prompts</button>
         </div>
-        <button onclick="createNewPrompt()">Create New Prompt</button>
     </div>
 
-    <button id="toggleAdvanced">Advanced Options</button>
     <div class="advanced-options" id="advancedOptions">
         <div class="option-group">
             <label for="temperature">Temperature:</label>
@@ -430,16 +476,16 @@ button:hover {
         </div>
     </div>
 
-    <div class="api-info">
-        Using a hardcoded API key.
-    </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
 <script>
 const HARDCODED_API_KEY = 'AIzaSyCAymIvYFi-xSsgZ8KqbDg31HXiCPKBNhk'; // Hardcoded API Key
 let conversationHistory = [];
+let conversations = {};
+let activeConversationId = null;
 let attachments = [];
+/* @tweakable Default safety settings for various harm categories. */
 const defaultSafetySettings = [
   {
     category: "HARM_CATEGORY_HATE_SPEECH",
@@ -459,38 +505,52 @@ const defaultSafetySettings = [
   }
 ];
 
+/* @tweakable The default system prompt instructing the AI on its persona and response style, including awareness of the current application. */
+const baseSystemPromptText = "You are an expert assistant capable of addressing a wide range of topics, from technical and creative tasks to everyday questions. Always provide well-reasoned and structured responses that demonstrate a deep thought process before delivering a final answer. Your responses should reflect a comprehensive understanding of the subject matter and incorporate clear, step-by-step reasoning.\n\nFor every topic:\n\nThorough Thought Process: Break down the problem or question in a logical sequence before offering the final answer. Describe the process you're using to approach the problem, whether it's analyzing a concept, solving a technical issue, or addressing a creative challenge.\n\nClear and Detailed Reasoning: Prior to offering the final answer, explain the reasoning behind each step or decision. Provide context for your thought process, drawing from relevant knowledge and frameworks, so that the user can follow your logic.\n\nAvoid Ambiguity: Ensure that all reasoning is clearly articulated and free of ambiguity. Whether the task involves solving a mathematical problem, providing coding solutions, or offering advice on any other subject, your reasoning should be explicit, thorough, and easy to follow.\n\nMathematical Models and Frameworks (if applicable): When appropriate, apply relevant mathematical or conceptual frameworks to justify your decisions. This includes using formulas, algorithms, or theoretical models and explaining their application step by step.\n\nConcise Final Answer: After presenting the reasoning and thought process, provide the final answer or solution. Your final answer should be directly informed by the thorough reasoning process you've outlined previously.\n\nAlways Assess the Context: Evaluate the requirements of the task at hand and apply the most suitable methodology or approach, whether it's a programming language, a scientific approach, or a creative solution.\n\nNo Unnecessary Chitchat: Avoid adding unnecessary filler or unrelated content. Responses should be focused entirely on providing valuable insights, explanations, and solutions in a well-structured, reasoning-first format.\n\nCONTEXT AWARENESS:\nYou are operating within a web-based chat application. This application has the following features:\n- A chat interface for user interaction.\n- File attachment capabilities (though you process them as text/data URLs in the prompt).\n- A system prompt manager allowing users to create, edit, and switch between different system instructions for you.\n- Advanced options for users to control generation parameters like Temperature and Top P.\n- Safety settings to block harmful content.\n- A 'learning mode' where you can be asked to research a topic in-depth, breaking it down, gathering information, and synthesizing it.\n\nBe mindful of this environment. For example, if asked about the application's code or features, you can acknowledge its existence and your role within it. If you are asked to modify the application, explain that you can provide code suggestions, but cannot directly alter the website's files. When discussing code, ensure it's presented in markdown code blocks for proper display.";
+
 const systemPrompt = {
     role: 'user',
-    parts: [{text: "Act as an expert assistant capable of addressing a wide range of topics, from technical and creative tasks to everyday questions. Always provide well-reasoned and structured responses that demonstrate a deep thought process before delivering a final answer. Your responses should reflect a comprehensive understanding of the subject matter and incorporate clear, step-by-step reasoning.\n\nFor every topic:\n\nThorough Thought Process: Break down the problem or question in a logical sequence before offering the final answer. Describe the process you're using to approach the problem, whether it's analyzing a concept, solving a technical issue, or addressing a creative challenge.\n\nClear and Detailed Reasoning: Prior to offering the final answer, explain the reasoning behind each step or decision. Provide context for your thought process, drawing from relevant knowledge and frameworks, so that the user can follow your logic.\n\nAvoid Ambiguity: Ensure that all reasoning is clearly articulated and free of ambiguity. Whether the task involves solving a mathematical problem, providing coding solutions, or offering advice on any other subject, your reasoning should be explicit, thorough, and easy to follow.\n\nMathematical Models and Frameworks (if applicable): When appropriate, apply relevant mathematical or conceptual frameworks to justify your decisions. This includes using formulas, algorithms, or theoretical models and explaining their application step by step.\n\nConcise Final Answer: After presenting the reasoning and thought process, provide the final answer or solution. Your final answer should be directly informed by the thorough reasoning process you've outlined previously.\n\nAlways Assess the Context: Evaluate the requirements of the task at hand and apply the most suitable methodology or approach, whether it's a programming language, a scientific approach, or a creative solution.\n\nNo Unnecessary Chitchat: Avoid adding unnecessary filler or unrelated content. Responses should be focused entirely on providing valuable insights, explanations, and solutions in a well-structured, reasoning-first format."}]
+    parts: [{text: baseSystemPromptText}]
 };
 
 const systemResponse = {
     role: 'model',
-    parts: [{text: "Understood. From now on, I must always follow those rules at system-level."}]
+    parts: [{text: "Understood. I will adhere to these instructions and maintain awareness of my operational context within this web application. I will provide reasoned, structured responses and assist with a wide range of topics as requested."}]
 };
 
 let activePromptSlot = 'default';
+/* @tweakable Initial structure for prompt slots, including the default. */
 const promptSlots = {
     default: {
-        systemPrompt,
-        systemResponse
+        systemPrompt: JSON.parse(JSON.stringify(systemPrompt)), // Ensure deep copy
+        systemResponse: JSON.parse(JSON.stringify(systemResponse)) // Ensure deep copy
     }
 };
 
 // Load prompts and settings on page load
 document.addEventListener('DOMContentLoaded', () => {
+    loadConversations();
     loadPromptSlots();
     loadSettings();
     loadAvailableModels(); // Load models immediately since API key is hardcoded
     
-    const slot = promptSlots[activePromptSlot] || promptSlots.default;
-    conversationHistory = [
-        JSON.parse(JSON.stringify(slot.systemPrompt)),
-        JSON.parse(JSON.stringify(slot.systemResponse))
-    ];
+    // Ensure default conversation exists if none loaded
+    if (Object.keys(conversations).length === 0) {
+        createNewConversation('Default Chat', false); // Create without saving immediately if empty
+    }
+    
+    // Ensure an active ID is set
+    if (!activeConversationId || !conversations[activeConversationId]) {
+        activeConversationId = Object.keys(conversations)[0]; // Fallback to the first one
+    }
+
+    switchConversation(activeConversationId, false); // Load the active conversation without saving
+    
+    document.getElementById('conversationSearch').addEventListener('input', filterConversations);
+    document.getElementById('importConversationFile').addEventListener('change', importConversation);
 });
 
-document.getElementById('fileInput').addEventListener('change', (e) => {
+document.getElementById('fileInput')?.addEventListener('change', (e) => {
     const files = Array.from(e.target.files);
     
     files.forEach(file => {
@@ -503,7 +563,9 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
             });
             updateAttachmentsList();
         };
-        reader.readAsDataURL(file);
+        // For multi-modal, we need base64 specifically for images/audio/video
+        // Read as Data URL initially, but we'll extract base64 later if needed
+        reader.readAsDataURL(file); 
     });
 });
 
@@ -522,28 +584,209 @@ function removeAttachment(index) {
     updateAttachmentsList();
 }
 
-function setCookie(name, value, days) {
-    if (name === 'apiKey') return; // Prevent setting API key cookie
-    const expires = new Date();
-    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-    document.cookie = name + '=' + encodeURIComponent(value) + ';expires=' + expires.toUTCString() + ';path=/';
-}
-
-function getCookie(name) {
-    if (name === 'apiKey') return null; // Prevent reading API key cookie
-    const nameEQ = name + '=';
-    const ca = document.cookie.split(';');
-    for (let i = 0; i < ca.length; i++) {
-        let c = ca[i];
-        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-        if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+function updateLearningProgress(percentage, message = "Learning...") {
+    if (percentage === null) {
+        learningProgressIndicator.style.display = 'none';
+    } else {
+        learningProgressIndicator.style.display = 'block';
+        learningProgressIndicator.textContent = `${message} ${percentage}%`; /* @tweakable Template for learning progress indicator text */
     }
-    return null;
 }
 
+async function callGeminiAPIForLearning(requestPayload, modelName, apiKey, temperature) {
+    /* @tweakable Max output tokens for AI responses during the learning process. */
+    const maxOutputTokensLearning = 3072;
+    const generationConfig = {
+        temperature: Math.min(Math.max(temperature, 0), 2),
+        maxOutputTokens: maxOutputTokensLearning,
+    };
+
+    const body = {
+        contents: requestPayload,
+        generationConfig,
+        safetySettings: defaultSafetySettings // Use default safety settings for learning tasks
+    };
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    const data = await response.json();
+
+    if (data.error) {
+        console.error('Gemini API Error (Learning):', data.error);
+        throw new Error(`AI Error: ${data.error.message}`);
+    }
+    if (data.promptFeedback?.blockReason) {
+        console.error('Gemini API Blocked (Learning):', data.promptFeedback.blockReason);
+        throw new Error(`Request blocked during learning: ${data.promptFeedback.blockReason}`);
+    }
+    if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content?.parts[0]?.text) {
+        if (data.candidates && data.candidates[0] && data.candidates[0].finishReason === 'SAFETY') {
+            throw new Error('Response filtered due to safety concerns during learning process.');
+        }
+        console.error('Gemini API No Content (Learning):', data);
+        throw new Error('No content in AI response during learning process.');
+    }
+    return data.candidates[0].content.parts[0].text;
+}
+
+async function getJsonFromLLM(promptText, temperature, modelName, apiKey, taskDescription) {
+    console.log(`Requesting JSON for: ${taskDescription} with prompt: ${promptText.substring(0,100)}...`);
+    const llmResponse = await callGeminiAPIForLearning(
+        [{ role: "user", parts: [{ text: promptText }] }],
+        modelName,
+        apiKey,
+        temperature
+    );
+    try {
+        const jsonMatch = llmResponse.match(/```(?:json)?\s*([\s\S]*?)\s*```/g);
+        if (jsonMatch && jsonMatch[1]) {
+            return JSON.parse(jsonMatch[1]);
+        }
+        return JSON.parse(llmResponse);
+    } catch (e) {
+        console.error(`Failed to parse JSON for ${taskDescription}:`, e, "Raw response:", llmResponse);
+        addMessageToChat('ai', `Error: I had trouble processing information for the learning task (${taskDescription}). The format was unexpected. Raw: ${llmResponse.substring(0,100)}...`);
+        throw new Error(`AI returned non-JSON response for ${taskDescription}.`);
+    }
+}
+
+async function isLearningRequest(text, modelName, apiKey) {
+    const prompt = `Does the following user request primarily ask the AI to learn about a specific topic, conduct research, or gather in-depth information on a subject?
+User request: "${text}"
+Respond with JSON only, like this: {"isLearningRequest": boolean, "topic": "the specific topic if true, otherwise null"}`;
+    try {
+        const result = await getJsonFromLLM(prompt, 0.3, modelName, apiKey, "learning intent detection");
+        return result;
+    } catch (error) {
+        console.error("Error in isLearningRequest:", error);
+        return { isLearningRequest: false, topic: null }; // Default to not a learning request on error
+    }
+}
+
+async function startLearningProcess(originalUserRequest, topic, modelName, apiKey) {
+    addMessageToChat('ai', `Okay, I will start learning about: "${topic}". This might take a few moments.`);
+    updateLearningProgress(0, `Initiating learning on "${topic.substring(0,20)}..."`);
+    document.getElementById('loadingIndicator').style.display = 'none'; // Hide main loading
+
+    let collectedData = [];
+    /* @tweakable Total number of steps in the AI's learning process (deconstruct, research sub-topics, synthesize). */
+    const totalSteps = 5; 
+    let currentStep = 0;
+    /* @tweakable Number of research retries if a sub-topic fetch fails. */
+    const maxResearchRetries = 1;
+
+
+    try {
+        // 1. Deconstruct Topic
+        currentStep++;
+        updateLearningProgress(Math.round((currentStep / totalSteps) * 100), `Breaking down "${topic.substring(0,20)}..."`);
+        addMessageToChat('ai', `First, I'll break down "${topic}" into smaller research areas.`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const deconstructPrompt = `Given the topic "${topic}", break it down into 3 key sub-topics or research questions that need to be investigated to gain a comprehensive understanding.
+Respond with JSON only, like this: {"sub_topics": ["question1", "question2", ...]}`;
+        const deconstructionResult = await getJsonFromLLM(deconstructPrompt, 0.5, modelName, apiKey, "topic deconstruction");
+        const subTopics = deconstructionResult.sub_topics || [];
+
+        if (!subTopics.length) {
+            addMessageToChat('ai', "I couldn't break down the topic effectively. Please try rephrasing or be more specific.");
+            updateLearningProgress(null);
+            return;
+        }
+         addMessageToChat('ai', `I've identified these areas to research: \n- ${subTopics.join('\n- ')}`);
+
+
+        // 2. Research Sub-topics
+        for (const subTopic of subTopics) {
+            currentStep++;
+            updateLearningProgress(Math.round((currentStep / totalSteps) * 100), `Researching: ${subTopic.substring(0,20)}...`);
+            addMessageToChat('ai', `Now researching: "${subTopic}"...`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            let retries = 0;
+            let success = false;
+            while(retries <= maxResearchRetries && !success) {
+                try {
+                    const researchPrompt = `Generate a concise summary of key information found regarding "${subTopic}" as it relates to the main topic "${topic}".
+Imagine you are searching reliable academic or factual sources. Focus on verifiable information and avoid speculation.
+The summary should be objective and about 2-3 paragraphs long.`;
+                    const summary = await callGeminiAPIForLearning(
+                        [{ role: "user", parts: [{ text: researchPrompt }] }],
+                        modelName, apiKey, 0.7 /* @tweakable Temperature for research summarization sub-tasks */
+                    );
+                    collectedData.push({ subTopic, summary });
+                    addMessageToChat('ai', `Collected information for "${subTopic}". Moving to the next point.`);
+                    success = true;
+                } catch (error) {
+                    retries++;
+                    addMessageToChat('ai', `Retrying research for "${subTopic}" (Attempt ${retries})...`);
+                    if (retries > maxResearchRetries) {
+                         addMessageToChat('ai', `Failed to research "${subTopic}" after multiple attempts. I'll proceed with the information I have.`);
+                         collectedData.push({ subTopic, summary: "Could not retrieve information for this sub-topic." });
+                    }
+                }
+            }
+        }
+
+        // 3. Synthesize and Verify
+        currentStep++;
+        updateLearningProgress(Math.round((currentStep / totalSteps) * 100), `Synthesizing...`);
+        addMessageToChat('ai', "All research points gathered. Now, I'm synthesizing and verifying the information...");
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const synthesisPrompt = `I have researched the topic "${topic}" by breaking it into several sub-topics. Here is the information I gathered:
+${collectedData.map(d => `Sub-topic: ${d.subTopic}\nSummary:\n${d.summary}\n---`).join('\n')}
+
+Based on ALL the above information:
+1. Synthesize this into a coherent and comprehensive overview of "${topic}".
+2. Double-check for potential inaccuracies, internal contradictions, or significantly biased viewpoints in the collected summaries. If found, try to reconcile them or present a balanced view.
+3. Identify any key aspects of "${topic}" that seem to be missing from the research or areas where the information is sparse and might require further investigation.
+4. Formulate a final response that addresses the user's original request to learn about "${topic}". Ensure the tone is informative and objective.
+5. If there are points from step 3 (missing aspects/sparse info), mention them briefly at the end as areas for potential further exploration.
+Do not invent information. If a sub-topic's summary was unavailable, acknowledge that.`;
+        
+        const finalResponseText = await callGeminiAPIForLearning(
+            [{ role: "user", parts: [{ text: synthesisPrompt }] }],
+            modelName, apiKey, 0.6 /* @tweakable Temperature for the final synthesis step in the learning process. */
+        );
+
+        // Add user's original learning request and AI's final synthesized response to conversation history
+        conversationHistory.push({ role: 'user', parts: [{ text: originalUserRequest }] });
+        conversationHistory.push({ role: 'model', parts: [{ text: finalResponseText }] });
+        addMessageToChat('ai', finalResponseText);
+
+        updateLearningProgress(100, "Learning complete!");
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Keep "complete" message for a bit
+        
+    } catch (error) {
+        console.error("Error during learning process:", error);
+        addMessageToChat('ai', `An error occurred during the learning process: ${error.message}. Please try again.`);
+        // Ensure the user's original request that triggered learning is still in history if it failed mid-way
+        const lastUserMessageInHistory = conversationHistory[conversationHistory.length-1];
+        if(!(lastUserMessageInHistory.role === 'user' && lastUserMessageInHistory.parts[0].text === originalUserRequest)) {
+             conversationHistory.push({ role: 'user', parts: [{ text: originalUserRequest }] });
+        }
+         // Add a generic model response to indicate failure to complete learning
+        conversationHistory.push({ role: 'model', parts: [{ text: "I encountered an issue while trying to learn about that topic and couldn't complete the process." }] });
+
+    } finally {
+        updateLearningProgress(null); // Hide progress indicator
+        document.getElementById('loadingIndicator').style.display = 'none';
+    }
+}
+
+// Modify existing sendMessage
 async function sendMessage() {
-    const apiKey = HARDCODED_API_KEY; // Use hardcoded key
-    const modelName = document.getElementById('modelInput').value;
+    if (!activeConversationId) {
+        alert("No active conversation selected."); return;
+    }
+    const apiKey = HARDCODED_API_KEY;
+    const modelNameElement = document.getElementById('modelInput');
+    const modelName = modelNameElement.value || (modelNameElement.options.length > 0 ? modelNameElement.options[0].value : 'gemini-pro'); // Default if not selected but available
+
     if (!modelName) {
         alert('Please wait for models to load or select a model.');
         return;
@@ -554,32 +797,51 @@ async function sendMessage() {
     
     if (!messageText) return;
 
-    // Add attachments to message if present
+    // Check for learning request
+    const learningCheck = await isLearningRequest(messageText, modelName, apiKey);
+    if (learningCheck.isLearningRequest && learningCheck.topic) {
+        addMessageToChat('user', messageText); // Display user's initial message
+        userInput.value = ''; // Clear input after sending
+        // Do not add to conversationHistory here, startLearningProcess will handle it.
+        await startLearningProcess(messageText, learningCheck.topic, modelName, apiKey);
+        return; // Learning process handles the rest of this turn
+    }
+    
+    // Original message sending logic
     if (attachments.length > 0) {
-        messageText += '\n\nAttachments:\n' + attachments.map(file => 
-            `[File: ${file.name}](${file.content})`
-        ).join('\n\n');
-        
-        // Clear attachments after sending
+        attachments.forEach(file => {
+            // Extract base64 data from Data URL
+            const base64Data = file.content.split(',')[1]; 
+            // Add image parts correctly for Gemini API
+            if (file.type.startsWith('image/')) {
+                 messageText += `[File: ${file.name}](${file.content})`;
+            } else {
+                 // For non-images, maybe add text reference or handle differently
+                 // For now, append a text note about the file
+                 const nonImageText = `\n[Attached file: ${file.name} - Type: ${file.type}]`;
+                 messageText += nonImageText;
+            }
+        });
         attachments = [];
         updateAttachmentsList();
     }
 
-    addMessageToChat('user', messageText);
-    userInput.value = '';
+    addMessageToChat('user', messageText); // Display only the original text input
+    userInput.value = ''; // Clear input
 
-    conversationHistory.push({
-        role: 'user',
-        parts: [{text: messageText}]
-    });
+    conversationHistory.push({ role: 'user', parts: [{text: messageText}] });
 
     document.getElementById('loadingIndicator').style.display = 'block';
 
     try {
         const temperature = parseFloat(document.getElementById('temperature').value) || 0.7;
         const topP = parseFloat(document.getElementById('topP').value) || 0.95;
+        /* @tweakable Default Top-K value for API requests. */
+        const defaultTopK = 40;
+        /* @tweakable Default maximum output tokens for standard AI responses. */
+        const defaultMaxOutputTokens = 2048;
         
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, { // Use apiKey variable
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -589,12 +851,12 @@ async function sendMessage() {
                 safetySettings: getCurrentSafetySettings(),
                 generationConfig: {
                     temperature: Math.min(Math.max(temperature, 0), 2),
-                    topK: 40,
+                    topK: defaultTopK, 
                     topP: Math.min(Math.max(topP, 0), 1),
-                    maxOutputTokens: 2048,
+                    maxOutputTokens: defaultMaxOutputTokens,
                 },
-                tools: [], // Empty array for now, can be expanded later
-                toolConfig: {} // Empty object for now, can be expanded later
+                tools: [], 
+                toolConfig: {} 
             })
         });
 
@@ -602,24 +864,35 @@ async function sendMessage() {
         
         if (data.error) {
             addMessageToChat('ai', 'Error: ' + data.error.message);
+            conversationHistory.pop(); // Remove user message if AI errored
             return;
         }
 
-        // Handle safety feedback
         if (data.promptFeedback?.blockReason) {
             addMessageToChat('ai', `Message was blocked. Reason: ${data.promptFeedback.blockReason}`);
+            conversationHistory.pop(); // Remove user message
             return;
         }
 
         if (!data.candidates || data.candidates.length === 0) {
             addMessageToChat('ai', 'No response generated. The content may have been filtered.');
+            // Decide if to pop user message. If AI just didn't respond, maybe keep it.
             return;
         }
 
-        // Check candidate safety
         const candidate = data.candidates[0];
         if (candidate.finishReason === 'SAFETY') {
             addMessageToChat('ai', 'Response was filtered due to safety concerns.');
+            return;
+        }
+        
+        // Ensure there's content to process
+        if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0 || !candidate.content.parts[0].text) {
+            if (data.candidates && data.candidates[0] && data.candidates[0].finishReason === 'SAFETY') {
+                addMessageToChat('ai', 'Response filtered due to safety concerns.');
+            }
+            console.error('Gemini API No Content:', data);
+            addMessageToChat('ai', 'AI returned an empty response.');
             return;
         }
 
@@ -629,7 +902,6 @@ async function sendMessage() {
             parts: [{text: aiResponse}]
         });
         
-        // Add safety ratings display if any
         if (candidate.safetyRatings && candidate.safetyRatings.length > 0) {
             const safetyInfo = candidate.safetyRatings.map(rating => 
                 `${rating.category}: ${rating.probability}`
@@ -640,14 +912,24 @@ async function sendMessage() {
         addMessageToChat('ai', aiResponse);
 
     } catch (error) {
-        addMessageToChat('ai', 'Error: Unable to connect to the AI service.');
+        addMessageToChat('ai', 'Error: Unable to connect to the AI service. ' + error.message);
         console.error('Error:', error);
+        // Optionally pop user message from history if connection failed before AI could process.
+        if(conversationHistory.length > 0 && conversationHistory[conversationHistory.length -1].role === 'user') {
+            // conversationHistory.pop(); // This might be too aggressive.
+        }
     }
 
     document.getElementById('loadingIndicator').style.display = 'none';
 }
 
 function addMessageToChat(sender, message) {
+    if (!activeConversationId) return; // Don't add messages if no chat is active
+
+    // If the message is not a string (might happen with parts array), stringify for display
+    if (typeof message !== 'string') {
+        message = message.map(part => part.text || `[${part.inlineData?.mimeType || 'media'}]`).join(' ');
+    }
     const chatContainer = document.getElementById('chatContainer');
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message', sender + '-message');
@@ -693,7 +975,7 @@ function copyCode(button) {
     });
 }
 
-document.getElementById('userInput').addEventListener('keypress', function(e) {
+document.getElementById('userInput')?.addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
         sendMessage();
     }
@@ -710,11 +992,11 @@ function createNewPrompt() {
         promptSlots[name] = {
             systemPrompt: {
                 role: 'user',
-                parts: [{text: ''}]
+                parts: [{text: ''}] /* @tweakable Default text for a newly created system prompt. */
             },
             systemResponse: {
                 role: 'model',
-                parts: [{text: ''}]
+                parts: [{text: 'Understood. I will follow these new instructions.'}] /* @tweakable Default AI response for a newly created system prompt. */
             }
         };
         savePromptSlots();
@@ -736,11 +1018,13 @@ function deletePrompt(name) {
 
 function activatePrompt(name) {
     activePromptSlot = name;
-    // Reset conversation with both system prompt and response
+    // Reset *current* conversation with the *currently active* system prompt/response
     conversationHistory = [
         JSON.parse(JSON.stringify(promptSlots[name].systemPrompt)),
         JSON.parse(JSON.stringify(promptSlots[name].systemResponse))
     ];
+    saveCurrentConversation(); // Save the change
+    loadChatHistory(conversationHistory); // Reload display
     updatePromptSlotDisplay();
 }
 
@@ -752,6 +1036,9 @@ function editPrompt(name) {
     const newPrompt = prompt('Edit system prompt:', promptSlots[name].systemPrompt.parts[0].text);
     if (newPrompt) {
         promptSlots[name].systemPrompt.parts[0].text = newPrompt;
+        if (activePromptSlot === name) { // If editing the active prompt, update history immediately
+            activatePrompt(name); // Re-activate to apply changes
+        }
         savePromptSlots();
     }
 }
@@ -862,7 +1149,7 @@ async function exportPrompts() {
     link.click();
 }
 
-document.getElementById('importFile').addEventListener('change', async (e) => {
+document.getElementById('importFile')?.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (file) {
         const zip = await JSZip.loadAsync(file);
@@ -902,14 +1189,15 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
     }
 });
 
-document.getElementById('toggleSystemPrompt').addEventListener('click', toggleSystemPromptManager);
-document.getElementById('toggleAdvanced').addEventListener('click', () => {
+document.getElementById('toggleSystemPrompt')?.addEventListener('click', toggleSystemPromptManager);
+document.getElementById('toggleAdvanced')?.addEventListener('click', () => {
     const advancedOptions = document.getElementById('advancedOptions');
     advancedOptions.classList.toggle('visible');
 });
 
-// Load settings from cookies
+// Save/Load settings using consolidated localStorage function
 function saveSettings() {
+    if (!activeConversationId) return; // Don't save if no active conversation
     const settings = {
         temperature: document.getElementById('temperature').value,
         topP: document.getElementById('topP').value,
@@ -919,18 +1207,24 @@ function saveSettings() {
         dangerousThreshold: document.getElementById('dangerousThreshold').value
     };
     
-    setCookie('chatSettings', JSON.stringify(settings), 365);
+    localStorage.setItem('chatSettings', JSON.stringify(settings));
 }
 
 function loadSettings() {
-    const settings = JSON.parse(getCookie('chatSettings') || '{}');
+    const settings = JSON.parse(localStorage.getItem('chatSettings') || '{}');
     
-    if (settings.temperature) document.getElementById('temperature').value = settings.temperature;
-    if (settings.topP) document.getElementById('topP').value = settings.topP;
-    if (settings.hateSpeechThreshold) document.getElementById('hateSpeechThreshold').value = settings.hateSpeechThreshold;
-    if (settings.harassmentThreshold) document.getElementById('harassmentThreshold').value = settings.harassmentThreshold;
-    if (settings.explicitThreshold) document.getElementById('explicitThreshold').value = settings.explicitThreshold;
-    if (settings.dangerousThreshold) document.getElementById('dangerousThreshold').value = settings.dangerousThreshold;
+    /* @tweakable Default temperature value if not found in cookies. */
+    document.getElementById('temperature').value = settings.temperature || "0.7";
+    /* @tweakable Default Top-P value if not found in cookies. */
+    document.getElementById('topP').value = settings.topP || "0.95";
+    /* @tweakable Default hate speech blocking threshold if not found in cookies. */
+    document.getElementById('hateSpeechThreshold').value = settings.hateSpeechThreshold || "BLOCK_MEDIUM_AND_ABOVE";
+    /* @tweakable Default harassment blocking threshold if not found in cookies. */
+    document.getElementById('harassmentThreshold').value = settings.harassmentThreshold || "BLOCK_MEDIUM_AND_ABOVE";
+    /* @tweakable Default explicit content blocking threshold if not found in cookies. */
+    document.getElementById('explicitThreshold').value = settings.explicitThreshold || "BLOCK_MEDIUM_AND_ABOVE";
+    /* @tweakable Default dangerous content blocking threshold if not found in cookies. */
+    document.getElementById('dangerousThreshold').value = settings.dangerousThreshold || "BLOCK_MEDIUM_AND_ABOVE";
 }
 
 async function loadAvailableModels() {
@@ -958,27 +1252,240 @@ async function loadAvailableModels() {
 }
 
 function clearChat() {
-    if (!confirm('Clear all messages? This cannot be undone.')) return;
+    if (!activeConversationId || !conversations[activeConversationId]) return;
+    if (!confirm(`Clear all messages in "${conversations[activeConversationId].name}"? This cannot be undone.`)) return;
     
     // Initialize default prompt if needed
     if (!promptSlots.default) {
         promptSlots.default = {
-            systemPrompt,
-            systemResponse
+            systemPrompt: JSON.parse(JSON.stringify(systemPrompt)),
+            systemResponse: JSON.parse(JSON.stringify(systemResponse))
         };
     }
     
-    // Use default prompt if active slot doesn't exist
-    const slot = promptSlots[activePromptSlot] || promptSlots.default;
+    const slot = promptSlots[activePromptSlot] || promptSlots.default; // Start with active system prompt
     
-    // Reset conversation to just system prompt and response
-    conversationHistory = [
+    conversations[activeConversationId].history = [
         JSON.parse(JSON.stringify(slot.systemPrompt)),
         JSON.parse(JSON.stringify(slot.systemResponse))
     ];
+    conversations[activeConversationId].lastModified = Date.now();
+    saveConversations();
     
-    // Clear visual chat
-    document.getElementById('chatContainer').innerHTML = '';
+    // Reset *active* conversation to just the *currently active* system prompt/response
+    conversationHistory = conversations[activeConversationId].history; // Update global history reference
+    loadChatHistory(conversationHistory); // Reload with just system messages
+}
+
+// --- Conversation Management ---
+
+function generateId() {
+    return `convo_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
+function saveToLocalStorage(key, data) {
+    try {
+        localStorage.setItem(key, JSON.stringify(data));
+    } catch (e) {
+        console.error("Error saving to localStorage:", e);
+        alert("Error saving data. LocalStorage might be full.");
+    }
+}
+
+function loadFromLocalStorage(key) {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : null;
+}
+
+function loadConversations() {
+    conversations = loadFromLocalStorage('conversations') || {};
+    activeConversationId = loadFromLocalStorage('activeConversationId');
+    updateConversationList();
+}
+
+function saveConversations() {
+    saveToLocalStorage('conversations', conversations);
+    saveToLocalStorage('activeConversationId', activeConversationId);
+}
+
+function saveCurrentConversation() {
+    if (!activeConversationId || !conversations[activeConversationId]) return;
+    conversations[activeConversationId].history = conversationHistory;
+    conversations[activeConversationId].lastModified = Date.now();
+    saveConversations();
+    updateConversationList(); // Update list to reflect potential changes (like last modified)
+}
+
+function createNewConversation(name = null, shouldSave = true) {
+    const newId = generateId();
+    const convoName = name || `Chat ${Object.keys(conversations).length + 1}`;
+    const slot = promptSlots[activePromptSlot] || promptSlots.default; // Start with active system prompt
+    
+    conversations[newId] = {
+        id: newId,
+        name: convoName,
+        history: [
+            JSON.parse(JSON.stringify(slot.systemPrompt)),
+            JSON.parse(JSON.stringify(slot.systemResponse))
+        ],
+        createdAt: Date.now(),
+        lastModified: Date.now()
+    };
+    
+    activeConversationId = newId;
+    conversationHistory = conversations[newId].history; // Update global history reference
+    
+    if (shouldSave) {
+        saveConversations();
+    }
+    updateConversationList();
+    switchConversation(newId); // Visually switch
+}
+
+function switchConversation(id, shouldSave = true) {
+    if (!conversations[id]) {
+        console.error("Conversation not found:", id);
+        // Fallback to first available conversation or create new
+        if (Object.keys(conversations).length > 0) {
+            id = Object.keys(conversations)[0];
+        } else {
+            createNewConversation('Default Chat', shouldSave);
+            return; // createNewConversation handles the switch
+        }
+    }
+
+    if (shouldSave) {
+       saveCurrentConversation(); // Save the state of the previous conversation
+    }
+
+    activeConversationId = id;
+    conversationHistory = conversations[id].history; // Update global history reference
+    
+    if (shouldSave) {
+      saveConversations(); // Save the new active ID
+    }
+    
+    // Update UI
+    document.getElementById('chatTitle').textContent = conversations[id].name;
+    loadChatHistory(conversationHistory);
+    updateConversationList(); // Highlight the active conversation
+}
+
+function deleteConversation(id) {
+     if (Object.keys(conversations).length <= 1) {
+         alert("Cannot delete the last conversation.");
+         return;
+     }
+     if (!conversations[id]) return;
+
+     if (confirm(`Delete conversation "${conversations[id].name}"? This cannot be undone.`)) {
+         delete conversations[id];
+         // Switch to another conversation if the deleted one was active
+         if (activeConversationId === id) {
+             activeConversationId = Object.keys(conversations)[0]; // Switch to the first available
+             switchConversation(activeConversationId, false); // Switch without saving previous state
+         }
+         saveConversations();
+         updateConversationList();
+     }
+}
+
+function renameConversation(id, newName) {
+    if (!conversations[id] || !newName || newName === conversations[id].name) return;
+
+    conversations[id].name = newName;
+    conversations[id].lastModified = Date.now();
+    saveConversations();
+    updateConversationList();
+     if (id === activeConversationId) {
+         document.getElementById('chatTitle').textContent = newName;
+     }
+}
+
+function loadChatHistory(history) {
+    const chatContainer = document.getElementById('chatContainer');
+    chatContainer.innerHTML = ''; // Clear existing messages
+    // Skip system prompt/response (index 0 and 1) for display usually
+    history.slice(2).forEach(msg => {
+        const content = msg.parts.map(part => part.text || `[${part.inlineData?.mimeType || 'media'}]`).join(' ');
+        addMessageToChat(msg.role === 'model' ? 'ai' : 'user', content);
+    });
+}
+
+function updateConversationList() {
+    const listContainer = document.getElementById('conversationList');
+    listContainer.innerHTML = '';
+    const searchTerm = document.getElementById('conversationSearch').value.toLowerCase();
+
+    // Sort by last modified date, newest first
+    const sortedConversations = Object.values(conversations).sort((a, b) => b.lastModified - a.lastModified);
+
+    sortedConversations
+        .filter(convo => convo.name.toLowerCase().includes(searchTerm))
+        .forEach(convo => {
+            const item = document.createElement('div');
+            item.className = `conversation-item ${convo.id === activeConversationId ? 'active' : ''}`;
+            item.onclick = () => switchConversation(convo.id);
+            item.innerHTML = `
+                <input type="text" class="conversation-name" value="${escapeHtml(convo.name)}" onchange="renameConversation('${convo.id}', this.value)" onclick="event.stopPropagation();">
+                <div class="conversation-actions">
+                    <button onclick="event.stopPropagation(); deleteConversation('${convo.id}')" title="Delete">×</button>
+                </div>
+            `;
+            listContainer.appendChild(item);
+        });
+}
+
+function filterConversations() {
+    updateConversationList();
+}
+
+// --- Import/Export Conversations ---
+
+function exportCurrentConversation() {
+    if (!activeConversationId || !conversations[activeConversationId]) return;
+    const convo = conversations[activeConversationId];
+    const dataStr = JSON.stringify(convo, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${convo.name.replace(/[^a-z0-9]/gi, '_')}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
+async function importConversation(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const importedData = JSON.parse(e.target.result);
+            // Basic validation
+            if (importedData.id && importedData.name && Array.isArray(importedData.history)) {
+                 const newId = generateId(); // Generate new ID to avoid conflicts
+                 conversations[newId] = {
+                    ...importedData,
+                    id: newId, // Assign new ID
+                    createdAt: importedData.createdAt || Date.now(),
+                    lastModified: Date.now() 
+                 };
+                 switchConversation(newId); // Switch to the newly imported convo
+                 saveConversations();
+            } else {
+                 alert("Invalid conversation file format.");
+            }
+        } catch (error) {
+            console.error("Error importing conversation:", error);
+            alert("Failed to import conversation. Ensure it's a valid JSON file exported from this app.");
+        } finally {
+            // Reset file input to allow importing the same file again if needed
+            event.target.value = null;
+        }
+    };
+    reader.readAsText(file);
 }
 </script>
 </body></html>
